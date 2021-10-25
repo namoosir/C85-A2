@@ -460,6 +460,11 @@ int get_angle() {
   return angle;
 }
 
+// Rotate to angle
+void rotate_to(int angle) {
+  //TODO
+}
+
 void calibrate_sensor(void)
 {
  /*
