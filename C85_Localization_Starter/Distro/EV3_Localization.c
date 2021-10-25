@@ -93,7 +93,6 @@ int map[400][4];            // This holds the representation of the map, up to 2
                             // intersection.
 int sx, sy;                 // Size of the map (number of intersections along x and y)
 double beliefs[400][4];     // Beliefs for each location and motion direction
-int my_RED[3], my_GREEN[3], my_BLUE[3], my_BLACK[3], my_YELLOW[3], my_WHITE[3];
 
 int main(int argc, char *argv[])
 {
@@ -232,24 +231,17 @@ int find_street(void)
   */
   int rgb[3];
   BT_read_colour_sensor_RGB(PORT_2, rgb);
-  int current_angle = BT_read_gyro_sensor(PORT_3);
 
   while (what_color(rgb) != 'k') {
     while (what_color(rgb) == 'r') {
-      while (BT_read_gyro_sensor(PORT_3) < current_angle + 90) {
-        BT_turn(MOTOR_A, 10, MOTOR_D, -10);
+      while (rotate_to(90)) {
+        continue;
       }
+      BT_read_colour_sensor_RGB(PORT_2, rgb);
     }
     BT_drive(MOTOR_A, MOTOR_D, 10);
     BT_read_colour_sensor_RGB(PORT_2, rgb);
   }
-
-  int on = 0;
-
-  while (!on) {
-
-  }
-  
   return(0);
 }
 
@@ -265,8 +257,21 @@ int drive_along_street(void)
   * 
   * You can use the return value to indicate success or failure, or to inform the rest of your code of the state of your
   * bot after calling this function.
-  */   
-  return(0);
+  */
+  int rgb[3];
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+  
+  while (1) {
+    while(what_color(rgb) == 'k') {
+      BT_drive(MOTOR_A, MOTOR_D, 10);
+      BT_read_colour_sensor_RGB(PORT_2, rgb);
+
+      if (what_color(rgb) == 'y') return(0);
+    }
+    while (rotate_to(180) && what_color(rgb) != 'k') {
+      continue;
+    }
+  }
 }
 
 int scan_intersection(int *tl, int *tr, int *br, int *bl)
@@ -452,16 +457,8 @@ double color_distance(int* rgba, int* rgbb) {
   return sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
 }
 
-int get_angle() {
-  int angle = BT_read_gyro_sensor(PORT_3)%360;
-  if (angle<0){
-    angle+=360;
-  }
-  return angle;
-}
-
 // Rotate to angle
-void rotate_to(int angle) {
+int rotate_to(int angle) {
   //TODO
 }
 
