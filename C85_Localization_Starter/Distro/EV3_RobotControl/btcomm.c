@@ -585,12 +585,12 @@ int BT_turn(char lport, char lpower, char rport, char rpower){
  cmd_string[19] = lport|rport;
 
 #ifdef __BT_debug
- fprintf(stderr,"BT_turn command string:\n");
+ //fprintf(stderr,"BT_turn command string:\n");
  for(int i=0; i<20; i++)
  {
-  fprintf(stderr,"%X, ",cmd_string[i]&0xff);
+  //fprintf(stderr,"%X, ",cmd_string[i]&0xff);
  }
- fprintf(stderr,"\n");
+ //fprintf(stderr,"\n");
 #endif
 
  write(*socket_id,&cmd_string[0],20);
@@ -600,7 +600,7 @@ int BT_turn(char lport, char lpower, char rport, char rpower){
 
  if (reply[4]==0x02){
 #ifdef __BT_debug
-  fprintf(stderr,"BT_turn command(): Command successful\n");
+  //fprintf(stderr,"BT_turn command(): Command successful\n");
 #endif
  }
  else{
@@ -1231,12 +1231,12 @@ int BT_read_gyro_sensor(char sensor_port){
  cmd_string[14]=GV0(0x00); //global var
 
 #ifdef __BT_debug
- fprintf(stderr,"BT_read_gyro_sensor command string\n");
+ //fprintf(stderr,"BT_read_gyro_sensor command string\n");
  for(int i=0; i<15; i++)
  {
-  fprintf(stderr,"%X, ",cmd_string[i]&0xff);
+  //fprintf(stderr,"%X, ",cmd_string[i]&0xff);
  }
- fprintf(stderr,"\n");
+ //fprintf(stderr,"\n");
 #endif
 
  write(*socket_id,&cmd_string[0],15);
@@ -1246,13 +1246,13 @@ int BT_read_gyro_sensor(char sensor_port){
 
  if (reply[4]==0x02){
 #ifdef __BT_debug
-  fprintf(stderr,"BT_read_gyro_sensor(): Command successful\n");
-  fprintf(stderr,"BT_read_gyro_sensor response string:\n");
+  //fprintf(stderr,"BT_read_gyro_sensor(): Command successful\n");
+  //fprintf(stderr,"BT_read_gyro_sensor response string:\n");
   for(int i=0; i<9; i++)
   {
-   fprintf(stderr,"%X, ",reply[i]&0xff);
+   //fprintf(stderr,"%X, ",reply[i]&0xff);
   }
-  fprintf(stderr,"\n");
+  //fprintf(stderr,"\n");
   angle |= (int32_t)reply[8];
   angle <<= 8;
   angle |= (int32_t)reply[7];
@@ -1260,7 +1260,7 @@ int BT_read_gyro_sensor(char sensor_port){
   angle |= (int32_t)reply[6];
   angle <<= 8;
   angle |= (int32_t)reply[5];
-  fprintf(stderr, "angle: %d\n", angle);
+  //fprintf(stderr, "angle: %d\n", angle);
 #endif
  }
  else{

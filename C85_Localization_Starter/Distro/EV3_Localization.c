@@ -93,6 +93,7 @@ int map[400][4];            // This holds the representation of the map, up to 2
                             // intersection.
 int sx, sy;                 // Size of the map (number of intersections along x and y)
 double beliefs[400][4];     // Beliefs for each location and motion direction
+int my_RED[3], my_GREEN[3], my_BLUE[3], my_BLACK[3], my_YELLOW[3], my_WHITE[3];
 
 int main(int argc, char *argv[])
 {
@@ -125,7 +126,10 @@ int main(int argc, char *argv[])
   * OPTIONAL TO DO: If you added code for sensor calibration, add just below this comment block any code needed to
   *   read your calibration data for use in your localization code. Skip this if you are not using calibration
   * ****************************************************************************************************************/
- 
+//  FILE *fptr;
+//  fptr = fopen("calibrated_colors.txt", "r");
+//  fscanf(fptr, "%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n", &my_RED[0], &my_RED[1], &my_RED[2], &my_GREEN[0], &my_GREEN[1], &my_GREEN[2], &my_BLUE[0], &my_BLUE[1], &my_BLUE[2], &my_BLACK[0], &my_BLACK[1], &my_BLACK[2], &my_YELLOW[0], &my_YELLOW[1], &my_YELLOW[2], &my_WHITE[0], &my_WHITE[1], &my_WHITE[2]);
+//  fclose(fptr);
  
  // Your code for reading any calibration information should not go below this line //
  
@@ -210,7 +214,7 @@ int main(int argc, char *argv[])
  // HERE - write code to call robot_localization() and go_to_target() as needed, any additional logic required to get the
  //        robot to complete its task should be here.
 
-
+  robot_localization(0,0,0);
  // Cleanup and exit - DO NOT WRITE ANY CODE BELOW THIS LINE
  BT_close();
  free(map_image);
@@ -225,7 +229,27 @@ int find_street(void)
   * 
   * You can use the return value to indicate success or failure, or to inform the rest of your code of the state of your
   * bot after calling this function
-  */   
+  */
+  int rgb[3];
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+  int current_angle = BT_read_gyro_sensor(PORT_3);
+
+  while (what_color(rgb) != 'k') {
+    while (what_color(rgb) == 'r') {
+      while (BT_read_gyro_sensor(PORT_3) < current_angle + 90) {
+        BT_turn(MOTOR_A, 10, MOTOR_D, -10);
+      }
+    }
+    BT_drive(MOTOR_A, MOTOR_D, 10);
+    BT_read_colour_sensor_RGB(PORT_2, rgb);
+  }
+
+  int on = 0;
+
+  while (!on) {
+
+  }
+  
   return(0);
 }
 
@@ -297,6 +321,20 @@ int turn_at_intersection(int turn_direction)
   * 
   * You can use the return value to indicate success or failure, or to inform your code of the state of the bot
   */
+  int current_angle = BT_read_gyro_sensor(PORT_3);
+  int desired_angle = 0;
+  if (turn_direction) {
+    desired_angle -= 90;
+    while (BT_read_gyro_sensor(PORT_3) > desired_angle) {
+      if (!BT_turn(MOTOR_A, -10, MOTOR_D, 10)) return(1);
+    }
+  }
+  else {
+    desired_angle += 90;
+    while (BT_read_gyro_sensor(PORT_3) < desired_angle) {
+      if (!BT_turn(MOTOR_A, 10, MOTOR_D, -10)) return(1);
+    }
+  }
   return(0);
 }
 
@@ -355,11 +393,28 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
 
  // Return an invalid location/direction and notify that localization was unsuccessful (you will delete this and replace it
  // with your code).
- 
-//  *(robot_x)=-1;
-//  *(robot_y)=-1;
-//  *(direction)=-1;
-//  return(0);
+  
+//  int avg[3] = {0,0,0};
+//  for (int i = 0; i < 10; i++) {
+  BT_timed_motor_port_start(MOTOR_C, 50, 80, 80, 80);
+  // BT_motor_port_stop(MOTOR_C, 0);
+
+
+//   while(1) {
+//     int rgb[3];
+//     BT_read_colour_sensor_RGB(PORT_2, rgb);
+//     printf("%c\n", what_color(rgb));
+//     printf("%d %d %d\n", rgb[0], rgb[1], rgb[2]);
+//   }
+// avg[0] += rgb[0];
+// avg[1] += rgb[1];
+// avg[2] += rgb[2];
+//  }
+//  avg[0] = avg[0]/10;
+//  avg[1] /= 10;
+//  avg[2] /= 10;
+//  printf("%d %d %d\n", avg[0], avg[1], avg[2]);
+
 }
 
 int go_to_target(int robot_x, int robot_y, int direction, int target_x, int target_y)
@@ -387,6 +442,24 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
   return(0);  
 }
 
+// compute the distance between two colors
+// reference https://www.compuphase.com/cmetric.htm
+double color_distance(int* rgba, int* rgbb) {
+  long rmean = ((long)rgba[0] + (long)rgbb[0])/2;
+  long r = (long)rgba[0]-(long)rgbb[0];
+  long g = (long)rgba[1]-(long)rgbb[1];
+  long b = (long)rgba[2]-(long)rgbb[2];
+  return sqrt((((512+rmean)*r*r)>>8) + 4*g*g + (((767-rmean)*b*b)>>8));
+}
+
+int get_angle() {
+  int angle = BT_read_gyro_sensor(PORT_3)%360;
+  if (angle<0){
+    angle+=360;
+  }
+  return angle;
+}
+
 void calibrate_sensor(void)
 {
  /*
@@ -404,12 +477,118 @@ void calibrate_sensor(void)
   * 
   * How to do this part is up to you, but feel free to talk with your TA and instructor about it!
   */   
+//  if any value is over 255, take 255
+  // GREEN: (60, 170, 80)
+  // RED: (255, 60, 60)
+  // BLUE: (3O, 70, 130)
+  // BLACK: (35, 45, 40)
+  // YELLOW: (255, 255, 95)
 
   /************************************************************************************************************************
    *   OIPTIONAL TO DO  -   Complete this function
    ***********************************************************************************************************************/
+//   if (BT_open(HEXKEY)!=0)
+//   {
+//     fprintf(stderr,"Unable to open comm socket to the EV3, make sure the EV3 kit is powered on, and that the\n");
+//     fprintf(stderr," hex key for the EV3 matches the one in EV3_Localization.h\n");
+//     exit(1);
+//   }
 
-  fprintf(stderr,"Calibration function called!\n");  
+//  fprintf(stderr,"All set, ready to go!\n");
+//   int green[3] = {60, 170, 80};
+//   int red[3] = {255, 60, 60};
+//   int blue[3] = {30, 70, 130};
+//   int black[3] = {35, 45, 40};
+//   int yellow[3] = {255, 255, 95};
+//   int white[3] = {0, 0, 0};
+//   int rgb[3];
+//   int initial_angle = get_angle();
+  
+//   while (1) {
+//     printf("%d\n", get_angle());
+//     // BT_turn(MOTOR_A, 10, MOTOR_D, -10);
+//   }
+//   return;
+
+//   BT_read_colour_sensor_RGB(PORT_2, rgb);
+//   double min_dist = fmin(fmin(fmin(color_distance(rgb, green), color_distance(rgb, red)), fmin(color_distance(rgb, blue), color_distance(rgb, black))), fmin(color_distance(rgb, yellow), color_distance(rgb, white)));
+//   int r = 0, g = 0, b = 0, k = 0, y = 0, w = 0;
+//   while (!(r || g || b|| k || y || w)) {
+//     while (color_distance(rgb, red) == min_dist) {
+//       red[0] = rgb[0];
+//       red[1] = rgb[1];
+//       red[2] = rgb[2];
+
+//       r = 1;
+//       while (BT_read_gyro_sensor(PORT_3) < 90) {
+//         BT_turn(MOTOR_A, 10, MOTOR_D, -10);
+//       }
+//       BT_read_colour_sensor_RGB(PORT_2, rgb);
+//     }
+
+//     BT_read_colour_sensor_RGB(PORT_2, rgb);
+//     double min_dist = fmin(fmin(fmin(color_distance(rgb, green), color_distance(rgb, red)), fmin(color_distance(rgb, blue), color_distance(rgb, black))), fmin(color_distance(rgb, yellow), color_distance(rgb, white)));
+
+//     if (color_distance(rgb, green) == min_dist) {
+//       green[0] = rgb[0];
+//       green[1] = rgb[1];
+//       green[2] = rgb[2];
+//       g = 1;
+//     } else if (color_distance(rgb, blue) == min_dist) {
+//       blue[0] = rgb[0];
+//       blue[1] = rgb[1];
+//       blue[2] = rgb[2];
+//       b = 1;
+//     } else if (color_distance(rgb, black) == min_dist) {
+//       black[0] = rgb[0];
+//       black[1] = rgb[1];
+//       black[2] = rgb[2];
+//       k = 1;
+//     } else if (color_distance(rgb, yellow) == min_dist) {
+//       yellow[0] = rgb[0];
+//       yellow[1] = rgb[1];
+//       yellow[2] = rgb[2];
+//       y = 1;
+//     } else {
+//       white[0] = rgb[0];
+//       white[1] = rgb[1];
+//       white[2] = rgb[2];
+//       w = 1;
+//     }
+//     BT_drive(MOTOR_A, MOTOR_D, 10);
+//   }
+//   FILE *fptr;
+//   fptr = fopen("calibrated_colors.txt", "w");
+//   fprintf(fptr, "%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n%d,%d,%d\n", red[0], red[1], red[2], green[0], green[1], green[2], blue[0], blue[1], blue[2], black[0], black[1], black[2], yellow[0], yellow[1], yellow[2], white[0], white[1], white[2]);
+//   fclose(fptr);
+//   BT_close();
+  fprintf(stderr,"Calibration function called!\n");
+  return;
+}
+
+// returns the char associated with the color given in rgb
+char what_color(int* rgb) {
+  int green[3] = {60, 170, 80};
+  int red[3] = {255, 60, 60};
+  int blue[3] = {30, 70, 130};
+  int black[3] = {35, 45, 40};
+  int yellow[3] = {255, 255, 95};
+  int white[3] = {255, 255, 255};
+
+  double min_dist = fmin(fmin(fmin(color_distance(rgb, green), color_distance(rgb, red)), fmin(color_distance(rgb, blue), color_distance(rgb, black))), fmin(color_distance(rgb, yellow), color_distance(rgb, white)));
+  if (color_distance(rgb, red) == min_dist) {
+    return 'r';
+  } else if (color_distance(rgb, green) == min_dist) {
+    return 'g';
+  } else if (color_distance(rgb, blue) == min_dist) {
+    return 'b';
+  } else if (color_distance(rgb, black) == min_dist) {
+    return 'k';
+  } else if (color_distance(rgb, yellow) == min_dist) {
+    return 'y';
+  } else {
+    return 'w';
+  }
 }
 
 int parse_map(unsigned char *map_img, int rx, int ry)
