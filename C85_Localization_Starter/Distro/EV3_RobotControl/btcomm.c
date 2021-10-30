@@ -305,7 +305,7 @@ int BT_motor_port_start(char port_ids, char power)
 #endif  
  
  write(*socket_id,&cmd_string[0],15);
- read(*socket_id,&reply[0],1023);
+//  read(*socket_id,&reply[0],1023);                  //IMPORTANT, WE ARE NOT WAITING FOR A RESPONSE FROM THE BOT B/C IT IS NOT WORKING
 
  message_id_counter++;
 
@@ -1245,6 +1245,13 @@ int BT_read_gyro_sensor(char sensor_port){
  message_id_counter++;
 
  if (reply[4]==0x02){
+    // angle |= (int32_t)reply[8];
+    // angle <<= 8;
+    // angle |= (int32_t)reply[7];
+    // angle <<= 8;
+    // angle |= (int32_t)reply[6];
+    // angle <<= 8;
+    // angle |= (int32_t)reply[5];
 #ifdef __BT_debug
   //fprintf(stderr,"BT_read_gyro_sensor(): Command successful\n");
   //fprintf(stderr,"BT_read_gyro_sensor response string:\n");

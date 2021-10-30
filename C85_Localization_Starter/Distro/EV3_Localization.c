@@ -93,6 +93,9 @@ int map[400][4];            // This holds the representation of the map, up to 2
                             // intersection.
 int sx, sy;                 // Size of the map (number of intersections along x and y)
 double beliefs[400][4];     // Beliefs for each location and motion direction
+int init_angle;
+int past_angle;
+int isRotating;
 
 int main(int argc, char *argv[])
 {
@@ -213,7 +216,23 @@ int main(int argc, char *argv[])
  // HERE - write code to call robot_localization() and go_to_target() as needed, any additional logic required to get the
  //        robot to complete its task should be here.
 
-  robot_localization(0,0,0);
+  // robot_localization(0,0,0);
+  // center_sensor();
+  // find_street();
+  turn_at_intersection(0);
+  turn_at_intersection(0);
+  int a[4];
+  // scan_intersection(&a[0], &a[1], &a[2], &a[3]);
+  // printf("%c %c %c %c \n", a[0], a[1], a[2], a[3]);
+
+  
+  // isRotating = 1;
+  // init_angle = get_angle();
+  // past_angle = get_angle();
+  // while (isRotating) {
+  //   rotate_to(-90);
+  // }
+
  // Cleanup and exit - DO NOT WRITE ANY CODE BELOW THIS LINE
  BT_close();
  free(map_image);
@@ -232,15 +251,102 @@ int find_street(void)
   int rgb[3];
   BT_read_colour_sensor_RGB(PORT_2, rgb);
 
+  while (what_color(rgb) == 'y') {
+    BT_drive(MOTOR_A, MOTOR_D, 10);
+    BT_read_colour_sensor_RGB(PORT_2, rgb);
+  }
+  //printf("%c\n",what_color(rgb));
   while (what_color(rgb) != 'k') {
+    //printf("%c\n",what_color(rgb));
     while (what_color(rgb) == 'r') {
-      while (rotate_to(90)) {
-        continue;
+      BT_all_stop(1);
+      isRotating = 1;
+      init_angle = get_angle();
+      past_angle = get_angle();
+      int random_angle = (int)(30*rand()/RAND_MAX) + 165;
+      //printf("%d", random_angle);
+      while (isRotating) {
+        rotate_to(random_angle);
+      }
+      while (what_color(rgb) == 'r'){
+        BT_drive(MOTOR_A, MOTOR_D, 10);
+        BT_read_colour_sensor_RGB(PORT_2, rgb);
       }
       BT_read_colour_sensor_RGB(PORT_2, rgb);
     }
     BT_drive(MOTOR_A, MOTOR_D, 10);
     BT_read_colour_sensor_RGB(PORT_2, rgb);
+  }
+  BT_all_stop(0);
+
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+  int seen_yellow = 0;
+  
+  while (1) {
+    while(what_color(rgb) == 'k') {
+      BT_drive(MOTOR_A, MOTOR_D, 10);
+      BT_read_colour_sensor_RGB(PORT_2, rgb);
+      if(what_color(rgb) != 'k'){
+        for (int i = 0; i < 3; i++)
+        {
+          BT_drive(MOTOR_A, MOTOR_D, 10);
+          BT_read_colour_sensor_RGB(PORT_2, rgb);
+        }
+      }
+      if (seen_yellow && what_color(rgb) == 'y') {
+        BT_all_stop(0);
+        return 0;
+      }
+
+      if (what_color(rgb) == 'y') {
+        seen_yellow = 1;
+        while (what_color(rgb) == 'y') {
+          BT_drive(MOTOR_A, MOTOR_D, 10);
+          BT_read_colour_sensor_RGB(PORT_2, rgb);
+        }
+        if(what_color(rgb) != 'y'){
+        for (int i = 0; i < 3; i++)
+        {
+          BT_drive(MOTOR_A, MOTOR_D, 10);
+          BT_read_colour_sensor_RGB(PORT_2, rgb);
+        }
+      }
+      }
+    }
+    BT_all_stop(0);
+    if (what_color(rgb) == 'r') {
+      isRotating = 1;
+      init_angle = get_angle();
+      past_angle = get_angle();
+
+      while(isRotating) {
+        rotate_to(175);
+      }
+
+      BT_read_colour_sensor_RGB(PORT_2, rgb);
+
+      while (what_color(rgb) != 'k') {
+        BT_drive(MOTOR_A, MOTOR_D, 10);
+        BT_read_colour_sensor_RGB(PORT_2, rgb);
+      }
+      BT_all_stop(0);
+      continue;
+    }
+
+    //reverse until black again
+    while (what_color(rgb) != 'k') {
+      BT_drive(MOTOR_A, MOTOR_D, -10);
+      BT_read_colour_sensor_RGB(PORT_2, rgb);
+    }
+    BT_all_stop(0);
+
+    isRotating = 1;
+    init_angle = get_angle();
+    past_angle = get_angle();
+
+    while(isRotating) {
+      rotate_to(6);
+    }
   }
   return(0);
 }
@@ -258,20 +364,7 @@ int drive_along_street(void)
   * You can use the return value to indicate success or failure, or to inform the rest of your code of the state of your
   * bot after calling this function.
   */
-  int rgb[3];
-  BT_read_colour_sensor_RGB(PORT_2, rgb);
-  
-  while (1) {
-    while(what_color(rgb) == 'k') {
-      BT_drive(MOTOR_A, MOTOR_D, 10);
-      BT_read_colour_sensor_RGB(PORT_2, rgb);
-
-      if (what_color(rgb) == 'y') return(0);
-    }
-    while (rotate_to(180) && what_color(rgb) != 'k') {
-      continue;
-    }
-  }
+  return 0;
 }
 
 int scan_intersection(int *tl, int *tr, int *br, int *bl)
@@ -309,8 +402,144 @@ int scan_intersection(int *tl, int *tr, int *br, int *bl)
  *(tr)=-1;
  *(br)=-1;
  *(bl)=-1;
- return(0);
  
+ int rgb[3];
+ int motor_power = 5;
+ int color_buffer = 5;
+ BT_read_colour_sensor_RGB(PORT_2, rgb);
+
+//drive forward
+ while (what_color(rgb) != 'k') {
+   BT_drive(MOTOR_A, MOTOR_D, 10);
+   BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<15;i++){
+   BT_drive(MOTOR_A, MOTOR_D, 10);
+ }
+ BT_all_stop(0);
+
+ //scan left
+ while (what_color(rgb) == 'k') {
+  BT_motor_port_start(MOTOR_C, motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+  // printf("%c %d %d %d\n",what_color(rgb), rgb[0], rgb[1],rgb[2]);
+ } 
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, motor_power);
+ }
+//  BT_motor_port_stop(MOTOR_C, 0);
+ BT_all_stop(0);
+ BT_read_colour_sensor_RGB(PORT_2, rgb);
+ *(tl) = what_color(rgb);
+
+//recenter
+ while (what_color(rgb) != 'k') {
+  BT_motor_port_start(MOTOR_C, -motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, -motor_power);
+ }
+ BT_all_stop(0);
+
+//scan right
+ while (what_color(rgb) == 'k') {
+  BT_motor_port_start(MOTOR_C, -motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, -motor_power);
+ }
+ BT_all_stop(0);
+ BT_read_colour_sensor_RGB(PORT_2, rgb);
+ *(tr) = what_color(rgb);
+
+ //recenter
+ while (what_color(rgb) != 'k') {
+  BT_motor_port_start(MOTOR_C, motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, motor_power);
+ }
+ BT_all_stop(0);
+
+ //move back
+ while (what_color(rgb) != 'y') {
+  BT_drive(MOTOR_A, MOTOR_D, -10);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<5;i++){
+   BT_drive(MOTOR_A, MOTOR_D, -10);
+ }
+ BT_all_stop(0);
+
+
+ //move back
+ while (what_color(rgb) != 'k') {
+  BT_drive(MOTOR_A, MOTOR_D, -10);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<15;i++){
+   BT_drive(MOTOR_A, MOTOR_D, -10);
+ }
+ BT_all_stop(0);
+ 
+ //scan left
+ while (what_color(rgb) == 'k') {
+  BT_motor_port_start(MOTOR_C, motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ } 
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, motor_power);
+ }
+  BT_all_stop(0);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+  *(bl) = what_color(rgb);
+
+//recenter
+ while (what_color(rgb) != 'k') {
+  BT_motor_port_start(MOTOR_C, -motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, -motor_power);
+ } 
+ BT_all_stop(0);
+
+//scan right
+ while (what_color(rgb) == 'k') {
+  BT_motor_port_start(MOTOR_C, -motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, -motor_power);
+ }
+ BT_all_stop(0);
+ *(br) = what_color(rgb);
+
+ //recenter
+ while (what_color(rgb) != 'k') {
+  BT_motor_port_start(MOTOR_C, motor_power);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<color_buffer;i++){
+   BT_motor_port_start(MOTOR_C, motor_power);
+ }
+ BT_all_stop(0);
+
+ //drive forward
+ while (what_color(rgb) != 'y') {
+  BT_drive(MOTOR_A, MOTOR_D, 10);
+  BT_read_colour_sensor_RGB(PORT_2, rgb);
+ }
+ for(int i=0;i<5;i++){
+   BT_drive(MOTOR_A, MOTOR_D, 10);
+ }
+ BT_all_stop(0);
+ center_sensor();
+
+ return(0); 
 }
 
 int turn_at_intersection(int turn_direction)
@@ -326,19 +555,12 @@ int turn_at_intersection(int turn_direction)
   * 
   * You can use the return value to indicate success or failure, or to inform your code of the state of the bot
   */
-  int current_angle = BT_read_gyro_sensor(PORT_3);
-  int desired_angle = 0;
-  if (turn_direction) {
-    desired_angle -= 90;
-    while (BT_read_gyro_sensor(PORT_3) > desired_angle) {
-      if (!BT_turn(MOTOR_A, -10, MOTOR_D, 10)) return(1);
-    }
-  }
-  else {
-    desired_angle += 90;
-    while (BT_read_gyro_sensor(PORT_3) < desired_angle) {
-      if (!BT_turn(MOTOR_A, 10, MOTOR_D, -10)) return(1);
-    }
+  int target_angle = turn_direction == 1 ? -90 : 90;
+  isRotating = 1;
+  init_angle = get_angle();
+  past_angle = get_angle();
+  while (isRotating) {
+    rotate_to(target_angle);
   }
   return(0);
 }
@@ -398,28 +620,19 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
 
  // Return an invalid location/direction and notify that localization was unsuccessful (you will delete this and replace it
  // with your code).
-  
-//  int avg[3] = {0,0,0};
-//  for (int i = 0; i < 10; i++) {
-  BT_timed_motor_port_start(MOTOR_C, 50, 80, 80, 80);
-  // BT_motor_port_stop(MOTOR_C, 0);
+ for (int i=0; i<90; i++) {            // 90 is a good number for 90 degree turn
+  BT_motor_port_start(MOTOR_C, 10);
+//  BT_drive(MOTOR_A, MOTOR_D, 10);
 
+ }
 
-//   while(1) {
-//     int rgb[3];
-//     BT_read_colour_sensor_RGB(PORT_2, rgb);
-//     printf("%c\n", what_color(rgb));
-//     printf("%d %d %d\n", rgb[0], rgb[1], rgb[2]);
-//   }
-// avg[0] += rgb[0];
-// avg[1] += rgb[1];
-// avg[2] += rgb[2];
-//  }
-//  avg[0] = avg[0]/10;
-//  avg[1] /= 10;
-//  avg[2] /= 10;
-//  printf("%d %d %d\n", avg[0], avg[1], avg[2]);
+//  BT_motor_port_start(MOTOR_C, 10);
 
+//  BT_motor_port_stop(MOTOR_C, 0);
+BT_all_stop(0);					// Quick call to stop everything
+ 
+ 
+ return(0);
 }
 
 int go_to_target(int robot_x, int robot_y, int direction, int target_x, int target_y)
@@ -458,10 +671,49 @@ double color_distance(int* rgba, int* rgbb) {
 }
 
 // Rotate to angle
-int rotate_to(int angle) {
-  //TODO
+void rotate_to(int angle) {
+  int cur_angle = get_angle();
+  printf("init: %d, cur: %d\n", init_angle, cur_angle);
+  if(abs(cur_angle-past_angle)>20) {
+    init_angle += cur_angle-past_angle;
+  }
+  if(abs(cur_angle-init_angle-angle)<4){
+    isRotating = 0;
+    BT_all_stop(0);
+  }else if(cur_angle-init_angle>angle){
+    if(angle>100){
+      BT_turn(MOTOR_A, -10, MOTOR_D, 10);
+    }else{
+      BT_turn(MOTOR_A, -10, MOTOR_D, 9);
+    }
+  }else if(cur_angle-init_angle<=angle){
+    BT_turn(MOTOR_A, 10, MOTOR_D, -8);
+  }
+  past_angle = cur_angle;
+  return;
 }
 
+int get_angle() {
+  int angle = BT_read_gyro_sensor(PORT_3);
+  angle = angle%360;
+  if(angle<0){
+    angle += 360;
+  }
+  return angle;
+}
+
+void center_sensor(){
+  for (int i = 0; i < 300; i++)
+  {
+    BT_motor_port_start(MOTOR_C, -5);
+  }
+  BT_all_stop(1);
+  for (int i = 0; i < 71; i++)
+  {
+    BT_motor_port_start(MOTOR_C, 5);
+  }
+  BT_all_stop(1);
+}
 void calibrate_sensor(void)
 {
  /*

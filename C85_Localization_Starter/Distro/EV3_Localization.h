@@ -83,5 +83,8 @@ void calibrate_sensor(void);
 unsigned char *readPPMimage(const char *filename, int *rx, int*ry);
 double color_distance(int* rgba, int* rgbb);
 char what_color(int* rgb);
+void rotate_to(int angle);
+int get_angle();
+void center_sensor(void);
 
 #endif
