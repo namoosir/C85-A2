@@ -228,7 +228,10 @@ int main(int argc, char *argv[])
  // HERE - write code to call robot_localization() and go_to_target() as needed, any additional logic required to get the
  //        robot to complete its task should be here.
 
-  // robot_localization(0,0,0);
+  int cx;
+  int cy;
+  int direction;
+  robot_localization(&cx, &cy, &direction);
   // center_sensor();
   // find_street();
 
@@ -736,7 +739,10 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
   /************************************************************************************************************************
    *   TO DO  -   Complete this function
    ***********************************************************************************************************************/
-
+  printBeliefs();
+  // while(!beliefsHasUnipue()){
+  //   //go for
+  // }
  // Return an invalid location/direction and notify that localization was unsuccessful (you will delete this and replace it
  // with your code).
 
@@ -956,6 +962,68 @@ char what_color(int* rgb) {
 
 int get_index(int x, int y){
   return x*sx+y;
+}
+
+void printBeliefs(){
+  int length = sx*sy;
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; i < 4; j++)
+    {
+      printf("%f ", beliefs[i][j]);
+    }
+    printf("\n ", beliefs[i][j]);
+  }
+}
+
+void normalizeBeliefs(){
+  int length = sx*sy;
+  //sum up
+  int sum = 0;
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; i < 4; j++)
+    {
+      sum += beliefs[i][j];
+    }
+  }
+  //divide
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; i < 4; j++)
+    {
+      beliefs[i][j] = beliefs[i][j]/sum;
+    }
+  }
+}
+
+int beliefsHasUnipueMax(){
+  int length = sx*sy;
+  double max = 0;
+  //find max
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; i < 4; j++)
+    {
+      if(beliefs[i][j] > max){
+        max = beliefs[i][j];
+      }
+    }
+  }
+
+  //find unipue
+  int count = 0;
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; i < 4; j++)
+    {
+      if(beliefs[i][j] == max){
+        count += 1;
+      }
+    }
+  }
+  
+  return count == 1
 }
 
 int parse_map(unsigned char *map_img, int rx, int ry)

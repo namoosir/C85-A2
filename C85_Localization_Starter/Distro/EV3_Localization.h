@@ -87,5 +87,7 @@ void rotate_to(int angle);
 int get_angle();
 void center_sensor(void);
 int get_index(int x, int y);
+int beliefsHasUnipueMax();
+void printBeliefs();
 
 #endif
