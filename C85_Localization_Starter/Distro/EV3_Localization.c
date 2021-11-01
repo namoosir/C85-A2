@@ -165,6 +165,18 @@ int main(int argc, char *argv[])
    beliefs[i+(j*sx)][2]=1.0/(double)(sx*sy*4);
    beliefs[i+(j*sx)][3]=1.0/(double)(sx*sy*4);
   }
+  printf("\n\n\n\n\nsx: %d, sy: %d\n", sx, sy);
+
+  printf("index %d", get_index(1,2));
+  printf("\n rx: %d, ry: %d\n", rx, ry);
+  for (int i = 0; i < 15; i++) {
+    for (int j =0; j<4; j++) {
+      printf("%d ", map[i][j]);
+    }
+      printf("\n ");
+  }
+
+  
 
  // Open a socket to the EV3 for remote controlling the bot.
  if (BT_open(HEXKEY)!=0)
@@ -219,9 +231,16 @@ int main(int argc, char *argv[])
   // robot_localization(0,0,0);
   // center_sensor();
   // find_street();
-  turn_at_intersection(0);
-  turn_at_intersection(0);
-  int a[4];
+
+  // while (1) {
+  //   int rgb[3];
+  //   BT_read_colour_sensor_RGB(PORT_2, rgb);
+  //   printf("%d %d %d %c\n", rgb[0], rgb[1], rgb[2], what_color(rgb));
+  // }
+  // turn_at_intersection(0);
+  // turn_at_intersection(0);
+  
+  // int a[4];
   // scan_intersection(&a[0], &a[1], &a[2], &a[3]);
   // printf("%c %c %c %c \n", a[0], a[1], a[2], a[3]);
 
@@ -364,6 +383,7 @@ int drive_along_street(void)
   * You can use the return value to indicate success or failure, or to inform the rest of your code of the state of your
   * bot after calling this function.
   */
+  
   return 0;
 }
 
@@ -620,17 +640,7 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
 
  // Return an invalid location/direction and notify that localization was unsuccessful (you will delete this and replace it
  // with your code).
- for (int i=0; i<90; i++) {            // 90 is a good number for 90 degree turn
-  BT_motor_port_start(MOTOR_C, 10);
-//  BT_drive(MOTOR_A, MOTOR_D, 10);
 
- }
-
-//  BT_motor_port_start(MOTOR_C, 10);
-
-//  BT_motor_port_stop(MOTOR_C, 0);
-BT_all_stop(0);					// Quick call to stop everything
- 
  
  return(0);
 }
@@ -827,7 +837,7 @@ char what_color(int* rgb) {
   int blue[3] = {30, 70, 130};
   int black[3] = {35, 45, 40};
   int yellow[3] = {255, 255, 95};
-  int white[3] = {255, 255, 255};
+  int white[3] = {200, 230, 255};
 
   double min_dist = fmin(fmin(fmin(color_distance(rgb, green), color_distance(rgb, red)), fmin(color_distance(rgb, blue), color_distance(rgb, black))), fmin(color_distance(rgb, yellow), color_distance(rgb, white)));
   if (color_distance(rgb, red) == min_dist) {
@@ -843,6 +853,10 @@ char what_color(int* rgb) {
   } else {
     return 'w';
   }
+}
+
+int get_index(int x, int y){
+  return x*sx+y;
 }
 
 int parse_map(unsigned char *map_img, int rx, int ry)
