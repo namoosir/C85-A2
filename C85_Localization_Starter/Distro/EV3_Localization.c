@@ -165,18 +165,16 @@ int main(int argc, char *argv[])
    beliefs[i+(j*sx)][2]=1.0/(double)(sx*sy*4);
    beliefs[i+(j*sx)][3]=1.0/(double)(sx*sy*4);
   }
-  printf("\n\n\n\n\nsx: %d, sy: %d\n", sx, sy);
+  // printf("\n\n\n\n\nsx: %d, sy: %d\n", sx, sy);
 
-  printf("index %d", get_index(1,2));
-  printf("\n rx: %d, ry: %d\n", rx, ry);
-  for (int i = 0; i < 15; i++) {
-    for (int j =0; j<4; j++) {
-      printf("%d ", map[i][j]);
-    }
-      printf("\n ");
-  }
-
-  
+  // printf("index %d", get_index(1,2));
+  // printf("\n rx: %d, ry: %d\n", rx, ry);
+  // for (int i = 0; i < 15; i++) {
+  //   for (int j =0; j<4; j++) {
+  //     printf("%d ", map[i][j]);
+  //   }
+  //     printf("\n ");
+  // }
 
  // Open a socket to the EV3 for remote controlling the bot.
  if (BT_open(HEXKEY)!=0)
@@ -240,10 +238,22 @@ int main(int argc, char *argv[])
   // }
   // go_to_target(cx, cy, direction, dest_x, dest_y);
 
-  int val = go_to_target(0,4,2,2,0);
+  // int val = go_to_target(0,4,2,2,0);
   // int val = verify_colors(0, 3, 2);
-  printf("did it fail? %d\n", val);
+  // printf("did it fail? %d\n", val);
 
+  int cx;
+  int cy;
+  int direction;
+  robot_localization(&cx, &cy, &direction);
+  int a[4];
+  // scan_intersection(&a[0], &a[1], &a[2], &a[3]);
+  fscanf(stdin, "%d %d %d %d", &a[0], &a[1], &a[2], &a[3]);
+  printf("%d %d %d %d \n", a[0], a[1], a[2], a[3]);
+  updateBeliefByColor(&a[0], &a[1], &a[2], &a[3]);
+  // updateBeliefByColor(change_color(a[0]), change_color(a[1]), change_color(a[2]), change_color(a[3]));
+  printf("\n");
+  robot_localization(&cx, &cy, &direction);
   // center_sensor();
   // find_street();
 
@@ -752,18 +762,12 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
    *   TO DO  -   Complete this function
    ***********************************************************************************************************************/
   printBeliefs();
-  int length=sx*sy;
-  double sum = 0;
-  for (int i = 0; i < length; i++)
-  {
-    for (int j = 0; j < 4; j++)
-    {
-      sum += beliefs[i][j];
-    }
-  }
-  printf("sum: %f\n", sum);
-  // while(!beliefsHasUnipue()){
-  //   //go for
+  // int a[4];
+  // scan_intersection(&a[0], &a[1], &a[2], &a[3]);
+  // updateBeliefByColor(&a[0], &a[1], &a[2], &a[3]);
+  // while(!beliefsHasUnipueMax()){
+  //   int a[4];
+  //   scan_intersection(&a[0], &a[1], &a[2], &a[3]);
   // }
  // Return an invalid location/direction and notify that localization was unsuccessful (you will delete this and replace it
  // with your code).
@@ -1177,7 +1181,7 @@ int beliefsHasUnipueMax(){
   //find max
   for (int i = 0; i < length; i++)
   {
-    for (int j = 0; i < 4; j++)
+    for (int j = 0; j < 4; j++)
     {
       if(beliefs[i][j] > max){
         max = beliefs[i][j];
@@ -1189,7 +1193,7 @@ int beliefsHasUnipueMax(){
   int count = 0;
   for (int i = 0; i < length; i++)
   {
-    for (int j = 0; i < 4; j++)
+    for (int j = 0; j < 4; j++)
     {
       if(beliefs[i][j] == max){
         count += 1;
@@ -1198,6 +1202,75 @@ int beliefsHasUnipueMax(){
   }
   
   return count == 1;
+}
+
+void updateBeliefByColor(int *tl, int *tr, int *br, int *bl){
+  int length = sx*sy;
+  int direction;
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      direction = color_match(tl, tr, br, bl, &map[i][0], &map[i][1], &map[i][2], &map[i][3]);
+      if(direction >= 0){
+        beliefs[i][direction] = 9*beliefs[i][direction];
+      }
+    }
+  }
+  normalizeBeliefs();
+}
+
+void updateBeliefByAction(){
+  int length = sx*sy;
+  double p = 0;
+  double beliefsCopy[400][4];
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      beliefsCopy[i][j] = beliefs[i][j];
+    }
+  }
+
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      if(i%sx == 0){//left edge
+        if(j==1){
+          beliefs[i][j] = 0.1*beliefsCopy[i][j];
+        }
+      }else{
+        beliefs[i][j] = 0.1*beliefsCopy[i][j];
+      }
+      if(i/sx != 0){
+        p += beliefsCopy[i-sx][2];
+      }
+      if(i%sx != sx-1){
+        p += beliefsCopy[i+1][3];
+      }
+      if(i/sx != sy-1){
+        p += beliefsCopy[i+sx][0];
+      }
+      beliefs[i][j] = p*beliefsCopy[i][j];
+    }
+  }
+}
+
+int color_match(int *tl1, int *tr1, int *br1, int *bl1, int *tl2, int *tr2, int *br2, int *bl2){
+  //return direction if color match in any direction, -1 if no match
+  if(*(tl1)==*(tl2) && *(tr1)==*(tr2) && *(br1)==*(br2) && *(bl1)==*(bl2)){
+    return 0;
+  }
+  else if(*(tl1)==*(tr2) && *(tr1)==*(br2) && *(br1)==*(bl2) && *(bl1)==*(tl2)){
+    return 1;
+  }else if(*(tl1)==*(br2) && *(tr1)==*(bl2) && *(br1)==*(tl2) && *(bl1)==*(tr2)){
+    return 2;
+  }else if (*(tl1)==*(bl2) && *(tr1)==*(tl2) && *(br1)==*(tr2) && *(bl1)==*(br2))
+  {
+    return 3;
+  }
+  return -1;
 }
 
 int parse_map(unsigned char *map_img, int rx, int ry)
