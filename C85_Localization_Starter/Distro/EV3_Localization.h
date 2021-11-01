@@ -89,5 +89,6 @@ void center_sensor(void);
 int get_index(int x, int y);
 int beliefsHasUnipueMax();
 void printBeliefs();
+void normalizeBeliefs();
 
 #endif

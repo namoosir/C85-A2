@@ -232,6 +232,10 @@ int main(int argc, char *argv[])
   int cy;
   int direction;
   robot_localization(&cx, &cy, &direction);
+  beliefs[0][0] = 0.1 * beliefs[0][0];
+  printf("\n");
+  normalizeBeliefs();
+  robot_localization(&cx, &cy, &direction);
   // center_sensor();
   // find_street();
 
@@ -246,7 +250,7 @@ int main(int argc, char *argv[])
   // int a[4];
   // scan_intersection(&a[0], &a[1], &a[2], &a[3]);
   // printf("%c %c %c %c \n", a[0], a[1], a[2], a[3]);
-  find_street();
+  // find_street();
   // drive_along_street();
   
   // isRotating = 1;
@@ -740,6 +744,16 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
    *   TO DO  -   Complete this function
    ***********************************************************************************************************************/
   printBeliefs();
+  int length=sx*sy;
+  double sum = 0;
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      sum += beliefs[i][j];
+    }
+  }
+  printf("sum: %f\n", sum);
   // while(!beliefsHasUnipue()){
   //   //go for
   // }
@@ -968,21 +982,21 @@ void printBeliefs(){
   int length = sx*sy;
   for (int i = 0; i < length; i++)
   {
-    for (int j = 0; i < 4; j++)
+    for (int j = 0; j < 4; j++)
     {
       printf("%f ", beliefs[i][j]);
     }
-    printf("\n ", beliefs[i][j]);
+    printf("\n ");
   }
 }
 
 void normalizeBeliefs(){
   int length = sx*sy;
   //sum up
-  int sum = 0;
+  double sum = 0;
   for (int i = 0; i < length; i++)
   {
-    for (int j = 0; i < 4; j++)
+    for (int j = 0; j < 4; j++)
     {
       sum += beliefs[i][j];
     }
@@ -990,7 +1004,7 @@ void normalizeBeliefs(){
   //divide
   for (int i = 0; i < length; i++)
   {
-    for (int j = 0; i < 4; j++)
+    for (int j = 0; j < 4; j++)
     {
       beliefs[i][j] = beliefs[i][j]/sum;
     }
@@ -1023,7 +1037,7 @@ int beliefsHasUnipueMax(){
     }
   }
   
-  return count == 1
+  return count == 1;
 }
 
 int parse_map(unsigned char *map_img, int rx, int ry)
