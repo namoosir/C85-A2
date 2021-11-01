@@ -90,5 +90,8 @@ int get_index(int x, int y);
 int beliefsHasUnipueMax();
 void printBeliefs();
 void normalizeBeliefs();
+int verify_colors(int robot_x, int robot_y, int direction);
+int change_color(char c);
+
 
 #endif

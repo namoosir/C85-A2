@@ -231,11 +231,14 @@ int main(int argc, char *argv[])
   int cx;
   int cy;
   int direction;
+
+  find_street();
   robot_localization(&cx, &cy, &direction);
-  beliefs[0][0] = 0.1 * beliefs[0][0];
-  printf("\n");
-  normalizeBeliefs();
-  robot_localization(&cx, &cy, &direction);
+
+  while(!go_to_target(cx, cy, direction, dest_x, dest_y)){
+    robot_localization(&cx, &cy, &direction);
+  }
+  go_to_target(cx, cy, direction, dest_x, dest_y);
   // center_sensor();
   // find_street();
 
@@ -764,6 +767,39 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
  return(0);
 }
 
+int verify_colors(int robot_x, int robot_y, int direction) {
+  int colors[4];
+  scan_intersection(&colors[0], &colors[1], &colors[2], &colors[3]);
+  int index = get_index(robot_x, robot_y);
+
+  colors[0] = change_color(colors[0]);
+  colors[1] = change_color(colors[1]);
+  colors[2] = change_color(colors[2]);
+  colors[3] = change_color(colors[3]);
+
+  if (direction == 0) {
+    if (colors[0] != map[index][0] || colors[1] != map[index][1] || colors[2] != map[index][2] || colors[3] != map[index][3]) {
+      return 1;
+    }
+    return 0;
+  } else if (direction == 1) {
+    if (colors[0] != map[index][1] || colors[1] != map[index][2] || colors[2] != map[index][3] || colors[3] != map[index][0]) {
+      return 1;
+    }
+    return 0;
+  } else if (direction == 2) {
+    if (colors[0] != map[index][2] || colors[1] != map[index][3] || colors[2] != map[index][0] || colors[3] != map[index][1]) {
+      return 1;
+    }
+    return 0;
+  } else {
+    if (colors[0] != map[index][3] || colors[1] != map[index][0] || colors[2] != map[index][1] || colors[3] != map[index][2]) {
+      return 1;
+    }
+    return 0;
+  }
+}
+
 int go_to_target(int robot_x, int robot_y, int direction, int target_x, int target_y)
 {
  /*
@@ -786,8 +822,79 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
   /************************************************************************************************************************
    *   TO DO  -   Complete this function
    ***********************************************************************************************************************/
-  return(0);  
-}
+
+  while (robot_x != target_x && robot_y != target_y) {
+    if (robot_x > target_x) {
+    if (direction == 0) {
+      rotate_to(-90);
+      direction = 3;
+    } else if (direction == 1) {
+      rotate_to(190);
+      direction = 3;
+    } else if (direction == 2) {
+      rotate_to(90);
+      direction = 3;
+    }
+  } else {
+    if (direction == 0) {
+      rotate_to(90);
+      direction = 1;
+    } else if (direction == 2) {
+      rotate_to(-90);
+      direction = 1;
+    } else if (direction == 3) {
+      rotate_to(190);
+      direction = 1;
+    }
+  }
+  if (!verify_colors(robot_x, robot_y, direction)) {
+    return 0;
+  }
+
+  while (robot_x != target_x) {
+    drive_along_street();
+    if (!verify_colors(robot_x, robot_y, direction)) {
+      return 0;
+    }
+  }
+
+  if (robot_y > target_y) {
+    if (direction == 0) {
+      rotate_to(190);
+      direction = 2;
+    } else if (direction == 1) {
+      rotate_to(90);
+      direction = 2;
+    } else if (direction == 3) {
+      rotate_to(-90);
+      direction = 2;
+    }
+  } else {
+    if (direction == 1) {
+      rotate_to(-90);
+      direction = 0;
+    } else if (direction == 2) {
+      rotate_to(190);
+      direction = 0;
+    } else if (direction == 3) {
+      rotate_to(90);
+      direction = 0;
+    }
+  }
+  if (!verify_colors(robot_x, robot_y, direction)) {
+    return 0;
+  }
+
+  while (robot_y != target_y) {
+    drive_along_street();
+    if (!verify_colors(robot_x, robot_y, direction)) {
+      return 0;
+    }
+  }
+
+  }
+  return 1;
+  }
 
 // compute the distance between two colors
 // reference https://www.compuphase.com/cmetric.htm
@@ -948,7 +1055,21 @@ void calibrate_sensor(void)
   fprintf(stderr,"Calibration function called!\n");
   return;
 }
-
+int change_color(char c) {
+  if (c == 'k') {
+    return 1;
+  } else if (c == 'b') {
+    return 2;
+  } else if (c == 'y') {
+    return 4;
+  } else if (c == 'g') {
+    return 3;
+  } else if (c == 'r') {
+    return 5;
+  } else {
+    return 6;
+  }
+}
 // returns the char associated with the color given in rgb
 char what_color(int* rgb) {
   int green[3] = {60, 170, 80};
