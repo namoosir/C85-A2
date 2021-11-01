@@ -877,6 +877,27 @@ void printBeliefs(){
   }
 }
 
+void normalizeBeliefs(){
+  int length = sx*sy;
+  //sum up
+  int sum = 0;
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; i < 4; j++)
+    {
+      sum += beliefs[i][j];
+    }
+  }
+  //divide
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; i < 4; j++)
+    {
+      beliefs[i][j] = beliefs[i][j]/sum;
+    }
+  }
+}
+
 int beliefsHasUnipueMax(){
   int length = sx*sy;
   double max = 0;
