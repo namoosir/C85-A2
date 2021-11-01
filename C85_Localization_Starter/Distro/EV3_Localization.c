@@ -228,17 +228,22 @@ int main(int argc, char *argv[])
  // HERE - write code to call robot_localization() and go_to_target() as needed, any additional logic required to get the
  //        robot to complete its task should be here.
 
-  int cx;
-  int cy;
-  int direction;
+  // int cx;
+  // int cy;
+  // int direction;
 
-  find_street();
-  robot_localization(&cx, &cy, &direction);
+  // find_street();
+  // robot_localization(&cx, &cy, &direction);
 
-  while(!go_to_target(cx, cy, direction, dest_x, dest_y)){
-    robot_localization(&cx, &cy, &direction);
-  }
-  go_to_target(cx, cy, direction, dest_x, dest_y);
+  // while(!go_to_target(cx, cy, direction, dest_x, dest_y)){
+  //   robot_localization(&cx, &cy, &direction);
+  // }
+  // go_to_target(cx, cy, direction, dest_x, dest_y);
+
+  int val = go_to_target(0,4,2,2,0);
+  // int val = verify_colors(0, 3, 2);
+  printf("did it fail? %d\n", val);
+
   // center_sensor();
   // find_street();
 
@@ -534,7 +539,7 @@ int scan_intersection(int *tl, int *tr, int *br, int *bl)
  int rgb[3];
  int motor_power = 5;
 int color_buffer = 5;
- int out_color_buffer = 9;
+ int out_color_buffer = 12;
  BT_read_colour_sensor_RGB(PORT_2, rgb);
 
 //drive forward
@@ -670,7 +675,7 @@ int color_buffer = 5;
 
  return(0); 
 }
-
+// 0 is right 1 is left
 int turn_at_intersection(int turn_direction)
 {
  /*
@@ -766,7 +771,7 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
  
  return(0);
 }
-
+// perform an intersection scan and verify whether the colors scanned are the same as the colors on the map at the given robot location and direction
 int verify_colors(int robot_x, int robot_y, int direction) {
   int colors[4];
   scan_intersection(&colors[0], &colors[1], &colors[2], &colors[3]);
@@ -776,6 +781,10 @@ int verify_colors(int robot_x, int robot_y, int direction) {
   colors[1] = change_color(colors[1]);
   colors[2] = change_color(colors[2]);
   colors[3] = change_color(colors[3]);
+
+  printf("this is the color value at intersection %d %d %d %d\n", colors[0], colors[1], colors[2], colors[3]);
+  printf("this is actual the color value at intersection %d %d %d %d\n", colors[0], colors[1], colors[2], colors[3]);
+
 
   if (direction == 0) {
     if (colors[0] != map[index][0] || colors[1] != map[index][1] || colors[2] != map[index][2] || colors[3] != map[index][3]) {
@@ -789,6 +798,7 @@ int verify_colors(int robot_x, int robot_y, int direction) {
     return 0;
   } else if (direction == 2) {
     if (colors[0] != map[index][2] || colors[1] != map[index][3] || colors[2] != map[index][0] || colors[3] != map[index][1]) {
+      
       return 1;
     }
     return 0;
@@ -822,28 +832,35 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
   /************************************************************************************************************************
    *   TO DO  -   Complete this function
    ***********************************************************************************************************************/
-
-  while (robot_x != target_x && robot_y != target_y) {
+  
     if (robot_x > target_x) {
+      if (direction == 0) {
+        // rotate_to(-90);
+        turn_at_intersection(1);
+        direction = 3;
+      } else if (direction == 1) {
+        // rotate_to(190);
+        turn_at_intersection(0);
+        turn_at_intersection(0);
+        direction = 3;
+      } else if (direction == 2) {
+        // rotate_to(90);
+        turn_at_intersection(0);
+        direction = 3;
+      }
+  } else if (robot_x < target_x) {
     if (direction == 0) {
-      rotate_to(-90);
-      direction = 3;
-    } else if (direction == 1) {
-      rotate_to(190);
-      direction = 3;
-    } else if (direction == 2) {
-      rotate_to(90);
-      direction = 3;
-    }
-  } else {
-    if (direction == 0) {
-      rotate_to(90);
+      // rotate_to(90);
+      turn_at_intersection(0);
       direction = 1;
     } else if (direction == 2) {
-      rotate_to(-90);
+      // rotate_to(-90);
+      turn_at_intersection(1);
       direction = 1;
     } else if (direction == 3) {
-      rotate_to(190);
+      // rotate_to(190);
+      turn_at_intersection(0);
+      turn_at_intersection(0);
       direction = 1;
     }
   }
@@ -853,32 +870,49 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
 
   while (robot_x != target_x) {
     drive_along_street();
+    if (robot_x > target_x) {
+      robot_x--;
+    } else {
+      robot_x++;
+    }
     if (!verify_colors(robot_x, robot_y, direction)) {
       return 0;
     }
   }
 
+  if (robot_y == target_y) {
+    return 1;
+  }
+
   if (robot_y > target_y) {
+    if (direction == 2) {
+      // rotate_to(190);
+      turn_at_intersection(0);
+      turn_at_intersection(0);
+      direction = 0;
+    } else if (direction == 1) {
+      // rotate_to(90);
+      turn_at_intersection(1);
+      direction = 0;
+    } else if (direction == 3) {
+      // rotate_to(-90);
+      turn_at_intersection(0);
+      direction = 0;
+    }
+  } else if (robot_y < target_y) {
     if (direction == 0) {
-      rotate_to(190);
+      // rotate_to(-90);
+      turn_at_intersection(0);
+      turn_at_intersection(0);
       direction = 2;
     } else if (direction == 1) {
-      rotate_to(90);
+      // rotate_to(190);
+      turn_at_intersection(0);
       direction = 2;
     } else if (direction == 3) {
-      rotate_to(-90);
+      // rotate_to(90);
+      turn_at_intersection(1);
       direction = 2;
-    }
-  } else {
-    if (direction == 1) {
-      rotate_to(-90);
-      direction = 0;
-    } else if (direction == 2) {
-      rotate_to(190);
-      direction = 0;
-    } else if (direction == 3) {
-      rotate_to(90);
-      direction = 0;
     }
   }
   if (!verify_colors(robot_x, robot_y, direction)) {
@@ -887,12 +921,16 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
 
   while (robot_y != target_y) {
     drive_along_street();
+    if (robot_y > target_y) {
+      robot_y--;
+    } else {
+      robot_y++;
+    }
     if (!verify_colors(robot_x, robot_y, direction)) {
       return 0;
     }
   }
 
-  }
   return 1;
   }
 
@@ -928,7 +966,7 @@ void rotate_to(int angle) {
   past_angle = cur_angle;
   return;
 }
-
+// get current angle
 int get_angle() {
   int angle = BT_read_gyro_sensor(PORT_3);
   angle = angle%360;
@@ -937,7 +975,7 @@ int get_angle() {
   }
   return angle;
 }
-
+// center the color sensor
 void center_sensor(){
   for (int i = 0; i < 300; i++)
   {
@@ -1055,6 +1093,7 @@ void calibrate_sensor(void)
   fprintf(stderr,"Calibration function called!\n");
   return;
 }
+//convert char color values to int color values
 int change_color(char c) {
   if (c == 'k') {
     return 1;
@@ -1094,11 +1133,11 @@ char what_color(int* rgb) {
     return 'w';
   }
 }
-
+// get index for map array given x and y location
 int get_index(int x, int y){
   return x*sx+y;
 }
-
+// print the beliefs array
 void printBeliefs(){
   int length = sx*sy;
   for (int i = 0; i < length; i++)
@@ -1110,7 +1149,7 @@ void printBeliefs(){
     printf("\n ");
   }
 }
-
+// normalize the beliefs array
 void normalizeBeliefs(){
   int length = sx*sy;
   //sum up
@@ -1131,7 +1170,7 @@ void normalizeBeliefs(){
     }
   }
 }
-
+// return whether belief array has a unique max or not
 int beliefsHasUnipueMax(){
   int length = sx*sy;
   double max = 0;
