@@ -1033,6 +1033,75 @@ int beliefsHasUnipueMax(){
   return count == 1;
 }
 
+void updateBeliefByColor(int *tl, int *tr, int *br, int *bl){
+  int length = sx*sy;
+  int direction;
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      direction = color_match(*tl, *tr, *br, *bl, map[i][0], map[i][1], map[i][2], map[i][3])
+      if(direction >= 0){
+        beliefs[i][direction] = 9*beliefs[i][direction];
+      }
+    }
+  }
+  normalizeBeliefs();
+}
+
+void updateBeliefByAction(){
+  int length = sx*sy;
+  double p = 0;
+  double beliefsCopy[400][4];
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      beliefsCopy[i][j] = beliefs[i][j];
+    }
+  }
+
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      if(i%sx == 0){//left edge
+        if(j==1){
+          beliefs[i][j] = 0.1*beliefsCopy[i][j];
+        }
+      }else{
+        beliefs[i][j] = 0.1*beliefsCopy[i][j];
+      }
+      if(i/sx != 0){
+        p += beliefsCopy[i-sx][2]
+      }
+      if(i%sx != sx-1){
+        p += beliefsCopy[i+1][3]
+      }
+      if(i/sx != sy-1){
+        p += beliefsCopy[i+sx][0]
+      }
+      beliefs[i][j] = p*beliefsCopy[i][j];
+    }
+  }
+}
+
+int color_match(int *tl1, int *tr1, int *br1, int *bl1, int *tl2, int *tr2, int *br2, int *bl2){
+  //return direction if color match in any direction, -1 if no match
+  if(*(tl1)==*(tl2) && *(tr1)==*(tr2) && *(br1)==*(br2) && *(bl1)==*(bl2)){
+    return 0;
+  }
+  else if(*(tl1)==*(tr2) && *(tr1)==*(br2) && *(br1)==*(bl2) && *(bl1)==*(tl2)){
+    return 1;
+  }else if(*(tl1)==*(br2) && *(tr1)==*(bl2) && *(br1)==*(tl2) && *(bl1)==*(tr2)){
+    return 2;
+  }else if (*(tl1)==*(bl2) && *(tr1)==*(tl2) && *(br1)==*(tr2) && *(bl1)==*(br2))
+  {
+    return 3;
+  }
+  return -1;
+}
+
 int parse_map(unsigned char *map_img, int rx, int ry)
 {
  /*
