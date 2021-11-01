@@ -743,20 +743,13 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
   /************************************************************************************************************************
    *   TO DO  -   Complete this function
    ***********************************************************************************************************************/
-  printBeliefs();
-  int length=sx*sy;
-  double sum = 0;
-  for (int i = 0; i < length; i++)
-  {
-    for (int j = 0; j < 4; j++)
-    {
-      sum += beliefs[i][j];
-    }
+  int a[4];
+  scan_intersection(&a[0], &a[1], &a[2], &a[3]);
+  updateBeliefByColor(&a[0], &a[1], &a[2], &a[3]);
+  while(!beliefsHasUnipueMax()){
+    int a[4];
+    scan_intersection(&a[0], &a[1], &a[2], &a[3]);
   }
-  printf("sum: %f\n", sum);
-  // while(!beliefsHasUnipue()){
-  //   //go for
-  // }
  // Return an invalid location/direction and notify that localization was unsuccessful (you will delete this and replace it
  // with your code).
 
@@ -1017,7 +1010,7 @@ int beliefsHasUnipueMax(){
   //find max
   for (int i = 0; i < length; i++)
   {
-    for (int j = 0; i < 4; j++)
+    for (int j = 0; j < 4; j++)
     {
       if(beliefs[i][j] > max){
         max = beliefs[i][j];
@@ -1029,7 +1022,7 @@ int beliefsHasUnipueMax(){
   int count = 0;
   for (int i = 0; i < length; i++)
   {
-    for (int j = 0; i < 4; j++)
+    for (int j = 0; j < 4; j++)
     {
       if(beliefs[i][j] == max){
         count += 1;
