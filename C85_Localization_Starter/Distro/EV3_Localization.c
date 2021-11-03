@@ -225,13 +225,12 @@ int main(int argc, char *argv[])
 
  // HERE - write code to call robot_localization() and go_to_target() as needed, any additional logic required to get the
  //        robot to complete its task should be here.
-
-  // int cx;
-  // int cy;
-  // int direction;
-
+  int cx, cy, direction;
   // find_street();
-  // robot_localization(&cx, &cy, &direction);
+  robot_localization(&cx, &cy, &direction);
+  printf("%d, %d %d\n", cx, cy, direction);
+  // turn_at_intersection(0);
+  go_to_target(cx, cy, direction, dest_x, dest_y);
 
   // while(!go_to_target(cx, cy, direction, dest_x, dest_y)){
   //   robot_localization(&cx, &cy, &direction);
@@ -242,18 +241,8 @@ int main(int argc, char *argv[])
   // int val = verify_colors(0, 3, 2);
   // printf("did it fail? %d\n", val);
 
-  int cx;
-  int cy;
-  int direction;
-  robot_localization(&cx, &cy, &direction);
-  int a[4];
-  // scan_intersection(&a[0], &a[1], &a[2], &a[3]);
-  fscanf(stdin, "%d %d %d %d", &a[0], &a[1], &a[2], &a[3]);
-  printf("%d %d %d %d \n", a[0], a[1], a[2], a[3]);
-  updateBeliefByColor(&a[0], &a[1], &a[2], &a[3]);
-  // updateBeliefByColor(change_color(a[0]), change_color(a[1]), change_color(a[2]), change_color(a[3]));
-  printf("\n");
-  robot_localization(&cx, &cy, &direction);
+  
+
   // center_sensor();
   // find_street();
 
@@ -393,11 +382,8 @@ int find_street(void)
     past_angle = get_angle();
 
     while(isRotating) {
-      if(seen_yellow){
-        rotate_to(-6);
-      }else{
-        rotate_to(6);
-      }
+      rotate_to(6);
+      
     }
   }
   return(0);
@@ -448,7 +434,7 @@ int drive_along_street(void)
       }
       if (what_color(rgb) == 'y') {
         BT_all_stop(0);
-        return 0;
+        return hit_red;
       }
     }
     BT_all_stop(0);
@@ -459,7 +445,7 @@ int drive_along_street(void)
       past_angle = get_angle();
 
       while(isRotating) {
-        rotate_to(190);
+        rotate_to(170); //changed this
       }
 
       BT_read_colour_sensor_RGB(PORT_2, rgb);
@@ -481,7 +467,7 @@ int drive_along_street(void)
       BT_drive(MOTOR_A, MOTOR_D, -10);
       BT_read_colour_sensor_RGB(PORT_2, rgb);
     }
-    for (int i = 0; i < 8; i++)
+    for (int i = 0; i < 10; i++)
     {
       BT_drive(MOTOR_A, MOTOR_D, -10);
     }
@@ -761,7 +747,52 @@ int robot_localization(int *robot_x, int *robot_y, int *direction)
   /************************************************************************************************************************
    *   TO DO  -   Complete this function
    ***********************************************************************************************************************/
-  printBeliefs();
+   printBeliefs();
+   printf("\n");
+  while (!beliefsHasUnipueMax()) {
+  
+  
+    printf("localization\n");
+    int a[4];
+    scan_intersection(&a[0], &a[1], &a[2], &a[3]);
+    a[0] = change_color(a[0]);
+    a[1] = change_color(a[1]);
+    a[2] = change_color(a[2]);
+    a[3] = change_color(a[3]);
+
+    printf("%d %d %d %d\n", a[0], a[1], a[2], a[3]);
+
+    updateBeliefByColor(&a[0], &a[1], &a[2], &a[3]);
+    printBeliefs();
+    printf("color\n");
+
+    int red = drive_along_street();
+    updateBeliefByAction(red);
+    printBeliefs();
+    printf("action\n");
+  }
+
+  int length = sx*sy;
+  double max = 0;
+  int max_x = 0, max_y = 0, max_dir = 0;
+
+  for (int i = 0; i < length; i++)
+  {
+    for (int j = 0; j < 4; j++)
+    {
+      if (beliefs[i][j] > max) {
+        max = beliefs[i][j];
+        max_x = i%sx;
+        max_y = i/sx;
+        max_dir = j;
+      }
+    }
+  }
+  *robot_x = max_x;
+  *robot_y = max_y;
+  *direction = max_dir;
+  
+  // printf("%d\n",beliefsHasUnipueMax());
   // int a[4];
   // scan_intersection(&a[0], &a[1], &a[2], &a[3]);
   // updateBeliefByColor(&a[0], &a[1], &a[2], &a[3]);
@@ -868,9 +899,9 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
       direction = 1;
     }
   }
-  if (!verify_colors(robot_x, robot_y, direction)) {
-    return 0;
-  }
+  // if (!verify_colors(robot_x, robot_y, direction)) {
+  //   return 0;
+  // }
 
   while (robot_x != target_x) {
     drive_along_street();
@@ -879,9 +910,9 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
     } else {
       robot_x++;
     }
-    if (!verify_colors(robot_x, robot_y, direction)) {
-      return 0;
-    }
+    // if (!verify_colors(robot_x, robot_y, direction)) {
+    //   return 0;
+    // }
   }
 
   if (robot_y == target_y) {
@@ -919,9 +950,9 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
       direction = 2;
     }
   }
-  if (!verify_colors(robot_x, robot_y, direction)) {
-    return 0;
-  }
+  // if (!verify_colors(robot_x, robot_y, direction)) {
+  //   return 0;
+  // }
 
   while (robot_y != target_y) {
     drive_along_street();
@@ -930,9 +961,9 @@ int go_to_target(int robot_x, int robot_y, int direction, int target_x, int targ
     } else {
       robot_y++;
     }
-    if (!verify_colors(robot_x, robot_y, direction)) {
-      return 0;
-    }
+    // if (!verify_colors(robot_x, robot_y, direction)) {
+    //   return 0;
+    // }
   }
 
   return 1;
@@ -1220,10 +1251,11 @@ void updateBeliefByColor(int *tl, int *tr, int *br, int *bl){
   normalizeBeliefs();
 }
 
-void updateBeliefByAction(){
+void updateBeliefByAction(int touchRed){
   int length = sx*sy;
   double p = 0;
   double beliefsCopy[400][4];
+  double small = 0.000001;
   for (int i = 0; i < length; i++)
   {
     for (int j = 0; j < 4; j++)
@@ -1231,30 +1263,108 @@ void updateBeliefByAction(){
       beliefsCopy[i][j] = beliefs[i][j];
     }
   }
-
-  for (int i = 0; i < length; i++)
-  {
-    for (int j = 0; j < 4; j++)
+  if(touchRed){
+    for (int i = 0; i < length; i++)
     {
-      if(i%sx == 0){//left edge
-        if(j==1){
-          beliefs[i][j] = 0.1*beliefsCopy[i][j];
+        if (i%sx == 0 && i/sx == 0) {//left top
+          beliefs[i][0] = beliefsCopy[i][0]*small;
+          beliefs[i][1] = beliefsCopy[i][3];
+          beliefs[i][2] = beliefsCopy[i][0];
+          beliefs[i][3] = beliefsCopy[i][3]*small;
+        } else if (i%sx == sx-1 && i/sx == 0) {//right top
+          beliefs[i][0] = beliefsCopy[i][0]*small;
+          beliefs[i][1] = beliefsCopy[i][1]*small;
+          beliefs[i][2] = beliefsCopy[i][0];
+          beliefs[i][3] = beliefsCopy[i][1];
+        }else if (i/sx == 0){//top mid
+          beliefs[i][0] = beliefsCopy[i][0]*small;
+          beliefs[i][1] = beliefsCopy[i][1]*small;
+          beliefs[i][2] = beliefsCopy[i][0];
+          beliefs[i][3] = beliefsCopy[i][3]*small;
+        }else if(i/sx == sy-1 && i%sx == 0){//bottom left
+          beliefs[i][0] = beliefsCopy[i][2];
+          beliefs[i][1] = beliefsCopy[i][3];
+          beliefs[i][2] = beliefsCopy[i][0]*small;
+          beliefs[i][3] = beliefsCopy[i][3]*small;
+        }else if (i/sx == sy-1 && i%sx == sx-1){//bottom right
+          beliefs[i][0] = beliefsCopy[i][2];
+          beliefs[i][1] = beliefsCopy[i][1]*small;
+          beliefs[i][2] = beliefsCopy[i][0]*small;
+          beliefs[i][3] = beliefsCopy[i][1];
+        } else if (i/sx == sy-1) {//bottom mid
+          beliefs[i][0] = beliefsCopy[i][2];
+          beliefs[i][1] = beliefsCopy[i][1]*small;
+          beliefs[i][2] = beliefsCopy[i][0]*small;
+          beliefs[i][3] = beliefsCopy[i][3]*small;
+        } else if (i%sx == 0) {//left mid
+          beliefs[i][0] = beliefsCopy[i][0]*small;
+          beliefs[i][1] = beliefsCopy[i][3];
+          beliefs[i][2] = beliefsCopy[i][0]*small;
+          beliefs[i][3] = beliefsCopy[i][3]*small;
+        } else if (i%sx == sx-1) {
+          beliefs[i][0] = beliefsCopy[i][0]*small;
+          beliefs[i][1] = beliefsCopy[i][0]*small;
+          beliefs[i][2] = beliefsCopy[i][0]*small;
+          beliefs[i][3] = beliefsCopy[i][1];
+        } else {
+          beliefs[i][0] = beliefsCopy[i][0]*small;
+          beliefs[i][1] = beliefsCopy[i][0]*small;
+          beliefs[i][2] = beliefsCopy[i][0]*small;
+          beliefs[i][3] = beliefsCopy[i][3]*small;
         }
-      }else{
-        beliefs[i][j] = 0.1*beliefsCopy[i][j];
+    }
+  }else{
+    for (int i = 0; i < length; i++)
+    {
+      if (i%sx == 0 && i/sx == 0) {//left top
+        beliefs[i][0] = beliefsCopy[i+sx][0];
+        beliefs[i][1] = beliefsCopy[i][1]*small;
+        beliefs[i][2] = beliefsCopy[i][2]*small;
+        beliefs[i][3] = beliefsCopy[i+1][3];
+      } else if (i%sx == sx-1 && i/sx == 0) {//right top
+        beliefs[i][0] = beliefsCopy[i+sx][0];
+        beliefs[i][1] = beliefsCopy[i-1][1];
+        beliefs[i][2] = beliefsCopy[i][2]*small;
+        beliefs[i][3] = beliefsCopy[i][3]*small;
+      }else if (i/sx == 0){//top mid
+        beliefs[i][0] = beliefsCopy[i+sx][0];
+        beliefs[i][1] = beliefsCopy[i-1][1];
+        beliefs[i][2] = beliefsCopy[i][2]*small;
+        beliefs[i][3] = beliefsCopy[i+1][3];
+      }else if(i/sx == sy-1 && i%sx == 0){//bottom left
+        beliefs[i][0] = beliefsCopy[i][0]*small;
+        beliefs[i][1] = beliefsCopy[i][1]*small;
+        beliefs[i][2] = beliefsCopy[i-sx][2];
+        beliefs[i][3] = beliefsCopy[i+1][3];
+      }else if (i/sx == sy-1 && i%sx == sx-1){//bottom right
+        beliefs[i][0] = beliefsCopy[i][0]*small;
+        beliefs[i][1] = beliefsCopy[i-1][1];
+        beliefs[i][2] = beliefsCopy[i-sx][2];
+        beliefs[i][3] = beliefsCopy[i][3]*small;
+      } else if (i/sx == sy-1) {//bottom mid
+        beliefs[i][0] = beliefsCopy[i][0]*small;
+        beliefs[i][1] = beliefsCopy[i-1][1];
+        beliefs[i][2] = beliefsCopy[i-sx][2];
+        beliefs[i][3] = beliefsCopy[i+1][3];
+      } else if (i%sx == 0) {//left mid
+        beliefs[i][0] = beliefsCopy[i+sx][0];
+        beliefs[i][1] = beliefsCopy[i][1]*small;
+        beliefs[i][2] = beliefsCopy[i-sx][2];
+        beliefs[i][3] = beliefsCopy[i+1][3];
+      } else if (i%sx == sx-1) {
+        beliefs[i][0] = beliefsCopy[i+sx][0];
+        beliefs[i][1] = beliefsCopy[i-1][1];
+        beliefs[i][2] = beliefsCopy[i-sx][2];
+        beliefs[i][3] = beliefsCopy[i][3]*small;
+      } else {
+        beliefs[i][0] = beliefsCopy[i+sx][0];
+        beliefs[i][1] = beliefsCopy[i-1][1];
+        beliefs[i][2] = beliefsCopy[i-sx][2];
+        beliefs[i][3] = beliefsCopy[i+1][3];
       }
-      if(i/sx != 0){
-        p += beliefsCopy[i-sx][2];
-      }
-      if(i%sx != sx-1){
-        p += beliefsCopy[i+1][3];
-      }
-      if(i/sx != sy-1){
-        p += beliefsCopy[i+sx][0];
-      }
-      beliefs[i][j] = p*beliefsCopy[i][j];
     }
   }
+  normalizeBeliefs();
 }
 
 int color_match(int *tl1, int *tr1, int *br1, int *bl1, int *tl2, int *tr2, int *br2, int *bl2){

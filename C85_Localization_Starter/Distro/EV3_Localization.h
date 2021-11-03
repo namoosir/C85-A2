@@ -94,6 +94,7 @@ void updateBeliefByColor(int *tl, int *tr, int *br, int *bl);
 int color_match(int *tl1, int *tr1, int *br1, int *bl1, int *tl2, int *tr2, int *br2, int *bl2);
 int verify_colors(int robot_x, int robot_y, int direction);
 int change_color(char c);
+void updateBeliefByAction(int touchRed);
 
 
 #endif

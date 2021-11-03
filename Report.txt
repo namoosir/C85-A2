@@ -1,0 +1,67 @@
+Q1) The total number of probabilities that the robot has to keep track of for a map of size m x n is (4 x m x n) because for each position on the map,
+    there are 4 different directions it could be facing. This is 4 because we are aligned to a road at an intersection so there are only 4 directions 
+    we can go.
+
+Q2) The initial value of the probabilities that our robot is keeping track of should be uniform for every spot. Thus, this is 1/(4 x m x n).
+
+Q3) We used a combination of the gyro sensor and the color sensor to determine how much we were turning the robot. We make sure to check that there is agreement
+    between the two sensors when possible. One example of this is when we are rotating the robot at an intersection, we turn based on the gyroscope reading and then verify
+    that our color sensor is still yellow. Our color sensor is on the axis of rotation so it should stay on the yellow intersection. Another way we deal with noise
+    is by having buffer periods where there is a transition between two colours. We ensure that we are not in the middle of two different colours by 
+    detecting a different color and then moving forward by some fixed amount so that we are past the transition area. This ensures that we are not picking up
+    some colour that is a mixture of two different colors and making a mistake because of it. Another source of noise is when the color sensor picks
+    up different colours based on the lighting in the area, the battery level, etc. We solved this by sampling colours in different conditions and then taking 
+    the average of them for each colour so that we have a good reference value. We then used a weighted norm to calculate the color distance between
+    the observed color and the reference colors and took the minimum distance color value to be the observed color. We tested these methods by trying various 
+    parts of the map during various conditions and fine tuning everything based on the results. We realize that it is not perfect and there are still some issues 
+    that arise here and there, however we tried our best to fine tune the adjustments so that we minimize the problems.
+
+Q4) Our probability update function takes the colours that were scanned and finds agreement between that and the map information that we have. For each intersection,
+    we take the number of colours that match in any given orientation. We assign a very high probability to the positions that match all the scanned colors.
+    All the other positions get updated to be lower. After this, we normalize the probabilities so that they all add up to 1. We found that after some testing,
+    assigning high probabilities only to the positions which have all matching colors was the fastest way to converge and finish localization.
+
+Q5) Our exploration stategy is quite simple. We noticed that the number of distinct intersections needed to scan before our localization was complete was 
+    at least 3. Given this information, we realized that a simple way to solve this problem was to scan intersections going forward until the boundary and 
+    then turning around and continuing to scan intersections. Given that there are always 3 intersections in the shortest length, we would always get enough
+    intersections to perform localization no matter which of the 4 ways we were oriented.
+
+Q6) When the robot gets to a boundary and performs a u-turn, we update the probabilities of the very middle intersections to be very low. This is because
+    it is highly unlikely that the robot turns at a boundary and then ends up in the middle of the map at an intersection. For all the other edges, we carefully
+    constructed cases where the probability that it is facing towards the towards the boundary gets swapped with the probability that it is facing away from
+    the boundary. We also assumed that the robot would perform the u-turn with very high reliability.
+
+Q7) We did not use this case in our implementation of the localization algorithm, however if we were to use it, we would shift all the beliefs 1 to the right if
+    it was a right turn, and one to the left if it was a left turn in a cyclic manner. The idea here is that turning does not really give us new information so
+    we will preserve the old probabilities that we have by doing this.
+
+Q8) Our method for deciding when the robot has achieved correct localization is when there is a unique maximum in the set of probabilities for each position.
+    We will continue scanning intersections until this happens.
+
+Q9) We decided to have our color sensor on the same axis as the wheels, and in the middle, so that when turning, we would have the color sensor in the center of
+    rotation. This makes aligning the robot simple and more consistent. Our gyro is not in the center of rotation because of the above, so we had to make does
+    with a slighly off position sensor. However we solved the sensor output inconsistencies in the code so that it still performs to a good degree of accuracy.
+    We have a relatively wide body design and that was so that we could fit the color sensor in between the wheels.
+
+Q10) The main parameter is for our robot to move properly through the intersections, as sometimes it gets misalligned, and we need to redo the localization
+     process when this occurs. Another parameter is the map. Our map had some issues where it would get stuck in different spots and also the there was some 
+     discoloration from folding it. Although this does sometimes cause issues, our robot can recover as long as we help it just a little bit.
+
+Q11) From our testing, as long as there is enough illumination for the humans to be able to see the colors, the robot should be able to perform localization.
+     However, I believe that better illumination helps the color sensor be more consistent.
+
+Q12) On average, it takes 3 intersections to achieve successful localization.
+
+Q13) I do not think that it matters where the robot starts for the localization. As long as it does not get stuck on the map or something weird happens.
+
+FEEDBACK
+
+1) Yes, this was perfect
+2) Yes, this was perfect
+3) Somewhat, maybe some 3D obstacles where we would use the sonar or something would be even better
+4) Yes, this was perfect
+5) Somewhat, due to lack of time, we were not able to fully create a model that would just work even with very uncertain readings, 
+   so we assumed that the sensors are mostly right or else something goes wrong and we restart the localization process.
+6) If we have the same setup, i.e. we have a map, some regular distinguishing features at every point of interest like the intersections. I'm confident I would be able to 
+   employ the same strategies I used in the project and would be able to implement the localization algorithm.
+7) This was really fun! Maybe a bit more time to polish everything would be even better!
